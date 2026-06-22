@@ -38,13 +38,17 @@ single window, small footprint.
 
 ## Screenshots
 
-<!-- Drop screenshots into a docs/ folder and reference them here:
-![Pingly main window](docs/screenshot-main.png)
-![Pingly geographic map](docs/screenshot-map.png)
-![Pingly alerts](docs/screenshot-alerts.png)
--->
+**Main window** — multi-target sidebar, hop table with per-hop sparklines, and the heuristic diagnose panel pointing at the slowest link.
 
-_Screenshots coming soon._
+![Pingly main window with hop table and diagnose panel](docs/screenshot-main.png)
+
+**Geographic route** — click the map preview to expand it into the centre panel and see where your traffic physically travels.
+
+![Pingly geographic route map](docs/screenshot-map.webp)
+
+**New target** — ⌘T (or Ctrl+T) opens the new-target dialog. Probing starts immediately; the route is discovered in the background.
+
+![Pingly new-target dialog](docs/screenshot-new-target.png)
 
 ## Download
 
