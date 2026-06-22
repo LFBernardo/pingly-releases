@@ -1,9 +1,8 @@
 # Pingly
 
-A fast, modern network path analyser — a focused replacement for tools like
-PingPlotter. Pingly traces every hop between you and a destination, then
-keeps pinging each hop continuously so you can see *where* and *when* the
-path degrades.
+A fast, modern visual network path analyser. Pingly traces every hop between
+you and a destination, then keeps pinging each hop continuously so you can
+see *where* and *when* the path degrades.
 
 Native desktop app for **macOS**, **Linux**, and **Windows**. Single binary,
 single window, small footprint.
