@@ -110,6 +110,7 @@ ICMP socket creation fails.
 
 - **[Latest release](https://github.com/LFBernardo/pingly-releases/releases/latest)**
 - **[All releases](https://github.com/LFBernardo/pingly-releases/releases)**
+- **[Changelog](CHANGELOG.md)**
 
 ## About
 
