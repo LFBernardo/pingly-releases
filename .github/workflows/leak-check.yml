@@ -1,0 +1,113 @@
+name: leak-check
+
+# Public assets repo guardrail. Scans the tracked files on every push and
+# pull request for two classes of leak:
+#
+# 1. Text content — anything that looks like a path under the source tree,
+#    a secret token shape, or an unintended owner reference.
+# 2. Image metadata — PNG/WebP files must not carry text/EXIF/XMP chunks,
+#    since they're a common silent vector for usernames, software IDs,
+#    timestamps, and (occasionally) GPS.
+#
+# Fails the build if anything trips. Triggered weekly too so the rule set
+# can evolve without needing a new commit to re-check.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 4 * * 1"   # Monday 04:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: text-content scan
+        run: |
+          set -euo pipefail
+
+          # Patterns we never expect to appear in a public-facing assets repo.
+          # Tune by extending this list rather than weakening matches.
+          PATTERNS='/Users/|/home/louis|src-tauri|/private/tmp|cargo install|tauri::|tokio::spawn|SECRET_|API[_-]?KEY|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|xox[baprs]-|-----BEGIN [A-Z ]+PRIVATE KEY'
+
+          # Skip the workflow file itself (it contains the pattern strings).
+          # Skip binary image assets (handled by the next step).
+          FAIL=0
+          mapfile -t FILES < <(git ls-files | grep -vE '^(docs/.*\.(png|webp|jpg|jpeg)$|\.github/workflows/leak-check\.yml$)')
+          for f in "${FILES[@]}"; do
+            if grep -nEi "$PATTERNS" "$f" >/dev/null 2>&1; then
+              echo "::error file=$f::matched a leakage pattern"
+              grep -nEi "$PATTERNS" "$f" || true
+              FAIL=1
+            fi
+          done
+
+          if [ "$FAIL" -ne 0 ]; then
+            echo "leak-check failed — see annotations above"
+            exit 1
+          fi
+          echo "→ text scan clean"
+
+      - name: image-metadata scan
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import struct, sys, os
+
+          # PNG chunks that are pure image data. Anything else (eXIf, tEXt,
+          # iTXt, zTXt, tIME, etc.) means metadata is present.
+          PNG_KEEP = {b'IHDR', b'PLTE', b'tRNS', b'IDAT', b'IEND',
+                      b'sRGB', b'gAMA', b'cHRM', b'pHYs', b'sBIT'}
+          # WebP chunks we accept. ICCP is a colour profile — large but
+          # standard and impersonal.
+          WEBP_KEEP = {b'VP8 ', b'VP8L', b'VP8X', b'ALPH', b'ANIM',
+                       b'ANMF', b'ICCP'}
+
+          bad = []
+
+          def scan_png(fp):
+              with open(fp, 'rb') as fh:
+                  fh.read(8)
+                  while True:
+                      ln = fh.read(4)
+                      if not ln: return
+                      ln = struct.unpack('>I', ln)[0]
+                      ctype = fh.read(4)
+                      fh.read(ln + 4)
+                      if ctype not in PNG_KEEP:
+                          bad.append((fp, ctype.decode('ascii','replace')))
+                      if ctype == b'IEND': return
+
+          def scan_webp(fp):
+              with open(fp, 'rb') as fh:
+                  fh.read(12)
+                  while True:
+                      hdr = fh.read(8)
+                      if len(hdr) < 8: return
+                      fourcc = hdr[:4]
+                      size = struct.unpack('<I', hdr[4:])[0]
+                      fh.read(size + (size & 1))
+                      if fourcc not in WEBP_KEEP:
+                          bad.append((fp, fourcc.decode('ascii','replace')))
+
+          for root, _, files in os.walk('.'):
+              if '.git' in root: continue
+              for name in files:
+                  fp = os.path.join(root, name)
+                  low = name.lower()
+                  if low.endswith('.png'):    scan_png(fp)
+                  elif low.endswith('.webp'): scan_webp(fp)
+
+          if bad:
+              for fp, c in bad:
+                  print(f"::error file={fp}::unexpected metadata chunk {c!r}")
+              sys.exit(1)
+          print("→ image-metadata scan clean")
+          PY
