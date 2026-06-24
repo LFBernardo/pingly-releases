@@ -58,10 +58,7 @@ Grab the latest installer for your platform from the
 | --- | --- | --- |
 | 🍎 macOS (Apple Silicon) | `Pingly_*_aarch64.dmg` | macOS 14+ |
 | 🐧 Linux (Debian / Ubuntu) | `Pingly_*_amd64.deb` | x64; grants `cap_net_raw` on install |
-| 🐧 Linux (portable) | `Pingly_*_amd64.AppImage` | x64; run `chmod +x` first |
-| 🪟 Windows 11 (installer) | `Pingly_*_x64_en-US.msi` | x64 |
-| 🪟 Windows 11 (standalone) | `pingly.exe` | x64; no installer, just run |
-| 🪟 Windows 11 (diagnostic) | `pingly-debug.exe` | x64; console build for troubleshooting |
+| 🪟 Windows 11 | `Pingly_*_x64_en-US.msi` | x64 |
 
 ## Install
 
@@ -82,23 +79,11 @@ sudo apt-get install -f   # pulls any missing runtime libs
 The post-install step grants the binary the `cap_net_raw` capability so it
 can open ICMP sockets without `sudo`.
 
-### Linux (portable AppImage)
-
-```sh
-chmod +x Pingly_*_amd64.AppImage
-./Pingly_*_amd64.AppImage
-```
-
-You may need `sudo setcap cap_net_raw+ep ./Pingly_*_amd64.AppImage` if
-ICMP socket creation fails.
-
 ### Windows 11
 
-- **Installer route:** double-click `Pingly_*_x64_en-US.msi`
-- **Standalone route:** download `pingly.exe` and run it directly — no
-  install required
-- If raw ICMP fails, launch from an Administrator command prompt or use
-  `pingly-debug.exe`, which keeps a console window open for diagnostics
+Double-click `Pingly_*_x64_en-US.msi` and follow the installer. If raw
+ICMP fails after install, launch Pingly from an Administrator command
+prompt.
 
 ## Requirements
 
